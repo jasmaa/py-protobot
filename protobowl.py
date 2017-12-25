@@ -1,8 +1,8 @@
-import requests
-import websocket
+"""Commands for interacting with PB"""
+
 import json
 
-def build_join(room):
+def join(room):
 
     data = {}
     data['name'] = 'join'
@@ -20,16 +20,37 @@ def build_join(room):
 
     return '5:::' + json.dumps(data)
 
-# connect
-server = "ocean.protobowl.com:443/socket.io/1/websocket/"
+def buzz(qid):
+    data = {}
 
-r = requests.get("http://"+server)
-socketString = r.text.split(":")[0]
-print("Socket = " + socketString)
+    data['name'] = 'buzz'
+    args = [1]
+    args[0] = qid
+    
+    data['args'] = args
 
-ws = websocket.WebSocket()
-ws.connect("ws://"+server+socketString)
+    return "5:23+::" + json.dumps(data)
 
-ws.send(build_join("actor-touching-chicken"))
+def guess(guess):
+    data = {}
+    data['name'] = 'guess'
 
-print(ws.recv())
+    args = [2]
+    arg_data = {}
+    arg_data['text'] = guess
+    arg_data['done'] = True
+
+    args[0] = arg_data
+    data['args'] = args
+
+    return '5:::' + json.dumps(data)
+
+def next_question():
+    data = {}
+
+    data['name'] = 'next'
+    args = [2]
+
+    data['args'] = args
+
+    return "5:::" + json.dumps(data)
