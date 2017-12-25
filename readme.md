@@ -3,8 +3,15 @@
 An attempt at writing a bot and possibly API for Protobowl in Python 3
 
 ### Usage
-  - `pip install -r requirements.txt`
-  - specify ROOM and run `main.py`
+
+```
+pb = ProtoBowl('hsquizbowl')
+pb.connect()
+
+pb.set_name('Anarki')
+pb.answer('earthworms')
+```
+
 
 ### Acknowledgements
   - [ProtoBot](https://github.com/bobacadodl/ProtoBot): Original ProtoBot used for reference

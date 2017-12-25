@@ -5,12 +5,12 @@ import utils
 import time
 
 PERMITTED_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ " 
-ROOM = "actor-touching-chicken"
+ROOM = "mbhsquizbowl"
 
 pb = ProtoBowl(ROOM)
 pb.connect()
 
-pb.set_name('Shah Abbas')
+pb.set_name('RedRussianBear')
 
 while True:
     pb.answer(utils.strip2alpha(pb.ans, PERMITTED_CHARS))
