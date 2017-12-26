@@ -7,7 +7,7 @@ import websocket
 import pprint as pp
 import threading
 import logging
-import sys
+from enum import Enum
 
 import utils
 
@@ -98,6 +98,10 @@ class ProtoBowl:
         self.ws.send('5:::{"name":"next","args":[null,null]}')
         logging.info('Next')
 
+    def skip(self):
+        self.ws.send('5:::{"name":"skip","args":[null,null]}')
+        logging.info('Skip')
+
     def pause(self):
         self.ws.send('5:::{"name":"pause","args":[null,null]}')
         logging.info('Paused')
@@ -110,6 +114,17 @@ class ProtoBowl:
         self.ws.send('2::')
         logging.info('Pinged!')
 
+    def chat(self, message):
+        self.ws.send('5:::{"name":"chat","args":[{"text":"'+ message +'","session":null,"first":false,"done":false},null]}')
+        logging.info('Chat: ' + message)
+
+    def set_difficulty(self, difficulty):
+        self.ws.send('5:::{"name":"set_difficulty","args":["'+ difficulty.value +'",null]}')
+        logging.info('Difficulty set to ' + difficulty.value)
+
+    def set_category(self, category):
+        self.ws.send('5:::{"name":"set_category","args":["'+ category.value +'",null]}')
+        logging.info('Category set to ' + category.value)
 
 """ Models a PB user """
 class User:
@@ -120,3 +135,26 @@ class User:
 
     def __str__(self):
         return 'User:' + self.id + ',' + self.name + ',' + str(self.score)
+
+""" Difficulty enum """
+class Difficulty(Enum):
+    ANY     = 'Any'
+    MS      = 'MS'
+    HS      = 'HS'
+    OPEN    = 'Open'
+    COLLEGE = 'College'
+
+""" Category enum """
+class Category(Enum):
+    EVERYTHING      = 'Everything'
+    TRASH           = 'Trash'
+    SOCIAL_SCIENCE  = 'Social Science'
+    SCIENCE         = 'Science'
+    RELIGION        = 'Religion'
+    PHILOSOPHY      = 'Philosophy'
+    MYTHOLOGY       = 'Mythology'
+    LITERATURE      = 'Literature'
+    HISTORY         = 'History'
+    GEOGRAPHY       = 'Geography'
+    FINE_ARTS       = 'Fine Arts'
+    CURRENT_EVENTS  = 'Current Events'

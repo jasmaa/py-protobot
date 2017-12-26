@@ -18,6 +18,4 @@ pb.answer('earthworms')
 
 ### TODO
   - implement more PB functionalities
-  - interpolate strings instead of rebuilding json?
-  - make the bot parse better
   - persistant sessions?

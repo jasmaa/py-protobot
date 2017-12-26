@@ -1,6 +1,7 @@
 """Currently a bot, will become client someday"""
 
 from protobowl import ProtoBowl
+from protobowl import Difficulty, Category
 import utils
 import time
 
@@ -15,6 +16,8 @@ pb.set_name('PBot')
 
 while True:
     pb.answer(utils.strip2alpha(pb.ans, PERMITTED_CHARS))
+    pb.skip()
     pb.next()
+
     pb.ping()
     time.sleep(0.3)
