@@ -32,9 +32,11 @@ class ProtoBowl:
     """Reads websocket and updates vars"""
     def update(self):
         while True:
-            data = utils.extract_json(self.ws.recv())
 
-            #print(json.dumps(data, indent=4))
+            self.ping()
+
+            data = utils.extract_json(self.ws.recv())
+            #print(json.dumps(data, indent=1))
 
             if type(data) is dict and data['name'] == 'sync':
                 args = data['args'][0]
@@ -74,7 +76,7 @@ class ProtoBowl:
         t.start()
 
     def answer(self, guess):
-        self.buzz(self.qid)
+        self.buzz()
         self.guess(guess, True)
 
     """ === Raw commands for interacting with PB === """
@@ -86,11 +88,11 @@ class ProtoBowl:
         self.ws.send('5:::{"name":"set_name","args":["' + name + '",null]}')
         logging.info('Set name to ' + name)
 
-    def buzz(self, qid):
-        self.ws.send('5:23+::{"name":"buzz","args":["' + qid + '"]}')
-        logging.info('Buzzed on ' + qid)
+    def buzz(self):
+        self.ws.send('5:23+::{"name":"buzz","args":["' + self.qid + '"]}')
+        logging.info('Buzzed')
 
-    def guess(self, guess, done):
+    def guess(self, guess, done=False):
         self.ws.send('5:::{"name":"guess","args":[{"text":"' + guess + '","done":true},null]}')
         logging.info('Guessed: ' + guess)
 
