@@ -20,3 +20,12 @@ def extract_json(text):
             continue
 
         return json.loads(text[i:])
+
+def union_dict(src, add):
+    return dict(list(src.items()) + list(add.items()))
+
+def cumsum(li, rate):
+    cs = 0
+    for num in li:
+        cs += round(num*rate)
+    return cs

@@ -15,10 +15,12 @@ pb.connect()
 pb.set_name('PBot')
 
 while True:
+
+    # wait for bot to load all keys
+    time.sleep(0.5)
     
-    
-    pb.answer(utils.strip2alpha(pb.ans, PERMITTED_CHARS))
+    pb.answer(utils.strip2alpha(pb.data['answer'], PERMITTED_CHARS))
     pb.skip()
     pb.next()
-
-    time.sleep(0.3)
+    
+    

@@ -8,6 +8,7 @@ import pprint as pp
 import threading
 import logging
 from enum import Enum
+import time
 
 import utils
 
@@ -22,46 +23,65 @@ class ProtoBowl:
         self.room_name = room
         self.cookie = cookie
         self.name = None
-        self.qid = ''
-        self.ans = ''
+
+        # Received data
+        self.data = {}
+
+
         self.users = []
 
         logging.basicConfig(filename='myapp.log', level=logging.INFO, filemode='w')
         #logging.getLogger().addHandler(logging.StreamHandler())
 
+    """Debug print"""
+    def key_print(self, val):
+        print('%-12s:  %-12s' % (val, str(self.data[val])))
+    def debug_print(self):
+        print('TIME STAT ======================')
+        print('================================')
+        self.key_print('real_time')
+        self.key_print('time_freeze')
+        self.key_print('time_offset')
+        self.key_print('begin_time')
+        self.key_print('end_time')
+        self.key_print('rate')
+        print('total time: ', utils.cumsum(self.data['timing'], self.data['rate']))
+        print('================================\n')
+
     """Reads websocket and updates vars"""
     def update(self):
         while True:
-
-            self.ping()
-
             data = utils.extract_json(self.ws.recv())
-            #print(json.dumps(data, indent=1))
 
             if type(data) is dict and data['name'] == 'sync':
                 args = data['args'][0]
 
-                try:
-                    # update user info
-                    if args['users']:
-                        self.users = []
-                        for d in args['users']:
-                            u = User(
-                                d['id'],
-                                d['name'],
-                                d['history'][-1],
-                            )
-                            self.users.append(u)
+                #flag = False
+                #if 'question' in self.data.keys() and 'question' in args.keys() and self.data['question'] != args['question']:
+                #    flag = True
 
-                except:
-                    None
+                self.data = utils.union_dict(self.data, args)
 
-                # try to get question
-                try:
-                    self.qid = args['qid']
-                    self.ans = args['answer']
-                except:
-                    None
+                #if flag:
+                #    self.display()
+                #    time.sleep(5)
+                #    self.debug_print()
+
+            self.ping()
+
+    def display(self):
+        qList = self.data['question'].split(' ')
+        start = time.time()
+        print('\n==============================================================\n')
+        for i in range(len(self.data['timing'])):
+            #print(qList[i],end=' ')
+
+            # fix timing (1300 if printing)
+            # wait time around 5 sec after
+            time.sleep(round(self.data['timing'][i] * self.data['rate'])  / 1000)
+
+        end = time.time()
+        print(end-start)
 
     def connect(self):
         r = requests.get('http://'+self.server)
@@ -69,7 +89,7 @@ class ProtoBowl:
         logging.info('Socket = ' + socketString)
 
         self.ws.connect('ws://'+self.server+socketString)
-        self.join_room(self.cookie, self.room_name)
+        self.join_room()
         logging.info('Cookie = ' + self.cookie)
 
         t = threading.Thread(target=self.update)
@@ -80,16 +100,16 @@ class ProtoBowl:
         self.guess(guess, True)
 
     """ === Raw commands for interacting with PB === """
-    def join_room(self, cookie, room_name):
-        self.ws.send('5:::{"name":"join","args":[{"cookie":"' + cookie + '","auth":null,"question_type":"qb","room_name":"' + room_name + '","muwave":false,"agent":"M4/Web","agent_version":"Sat Sep 02 2017 11:33:43 GMT-0700 (PDT)","version":8}]}')
-        logging.info('Joined ' + room_name)
+    def join_room(self):
+        self.ws.send('5:::{"name":"join","args":[{"cookie":"' + self.cookie + '","auth":null,"question_type":"qb","room_name":"' + self.room_name + '","muwave":false,"agent":"M4/Web","agent_version":"Sat Sep 02 2017 11:33:43 GMT-0700 (PDT)","version":8}]}')
+        logging.info('Joined ' + self.room_name)
 
     def set_name(self, name):
         self.ws.send('5:::{"name":"set_name","args":["' + name + '",null]}')
         logging.info('Set name to ' + name)
 
     def buzz(self):
-        self.ws.send('5:23+::{"name":"buzz","args":["' + self.qid + '"]}')
+        self.ws.send('5:23+::{"name":"buzz","args":["' + self.data['qid'] + '"]}')
         logging.info('Buzzed')
 
     def guess(self, guess, done=False):
