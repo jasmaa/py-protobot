@@ -54,18 +54,16 @@ class ProtoBowl:
             data = utils.extract_json(self.ws.recv())
 
             if type(data) is dict and data['name'] == 'sync':
-                args = data['args'][0]
 
-                #flag = False
-                #if 'question' in self.data.keys() and 'question' in args.keys() and self.data['question'] != args['question']:
-                #    flag = True
+                args = data['args'][0]
+                old_data = dict(self.data)
 
                 self.data = utils.union_dict(self.data, args)
 
-                #if flag:
-                #    self.display()
-                #    time.sleep(5)
-                #    self.debug_print()
+                if 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
+                    self.display()
+                    time.sleep(5)
+                    self.debug_print()
 
             self.ping()
 
