@@ -12,6 +12,13 @@ import time
 
 import utils
 
+class GameState(Enum):
+    RUNNING = 0
+    PAUSED = 1
+    BUZZED = 2
+    PROMPTED = 3
+    IDLE = 4
+
 """ Main connection to PB """
 class ProtoBowl:
 
@@ -27,6 +34,7 @@ class ProtoBowl:
         # Received data
         self.data = {}
 
+        self.game_state = GameState.RUNNING
 
         self.users = []
 
@@ -40,10 +48,11 @@ class ProtoBowl:
         print('TIME STAT ======================')
         print('================================')
         self.key_print('real_time')
-        self.key_print('time_freeze')
-        self.key_print('time_offset')
         self.key_print('begin_time')
         self.key_print('end_time')
+        self.key_print('time_freeze')
+        self.key_print('time_offset')
+        self.key_print('time_spent')
         self.key_print('rate')
         print('total time: ', utils.cumsum(self.data['timing'], self.data['rate']))
         print('================================\n')
@@ -53,6 +62,14 @@ class ProtoBowl:
         while True:
             data = utils.extract_json(self.ws.recv())
 
+
+            try:
+                self.display()
+                print(self.game_state)
+            except:
+                None
+
+
             if type(data) is dict and data['name'] == 'sync':
 
                 args = data['args'][0]
@@ -60,26 +77,43 @@ class ProtoBowl:
 
                 self.data = utils.union_dict(self.data, args)
 
-                if 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
-                    self.display()
-                    time.sleep(5)
-                    self.debug_print()
+                # debug timing
+                #self.debug_print()
+
+                # check running
+                # real_time - time_offset < end_time
+                if self.data['real_time'] - self.data['time_offset'] < self.data['end_time']:
+                    self.game_state = GameState.RUNNING
+                else:
+                    self.game_state = GameState.IDLE
+
+                # check buzzes (pauses yeah)
+                if self.data['time_freeze'] != 0:
+                    self.game_state = GameState.BUZZED
+
+                # detect new question
+                #if 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
 
             self.ping()
 
+    # fix timing
     def display(self):
-        qList = self.data['question'].split(' ')
-        start = time.time()
-        print('\n==============================================================\n')
-        for i in range(len(self.data['timing'])):
-            #print(qList[i],end=' ')
+        if self.game_state == GameState.RUNNING:
+            time_passed = (self.data['real_time'] - self.data['time_offset'] - self.data['begin_time'])
+            accum = 0
+            disp = ''
+            qList = self.data['question'].split(' ')
+            for i in range(len(self.data['timing'])):
+                disp += qList[i] + ' '
+                accum += round(self.data['timing'][i]*self.data['rate'])
 
-            # fix timing (1300 if printing)
-            # wait time around 5 sec after
-            time.sleep(round(self.data['timing'][i] * self.data['rate'])  / 1000)
+                if accum >= time_passed:
+                    break
 
-        end = time.time()
-        print(end-start)
+            print(time_passed)
+            print(accum)
+
+            print(disp)
 
     def connect(self):
         r = requests.get('http://'+self.server)
