@@ -18,6 +18,7 @@ class GameState(Enum):
     BUZZED = 2
     PROMPTED = 3
     IDLE = 4
+    NEW_Q = 5
 
 """ Main connection to PB """
 class ProtoBowl:
@@ -34,11 +35,8 @@ class ProtoBowl:
         # Received data
         self.data = {}
 
-        # client vars
+        # state vars
         self.game_state = GameState.RUNNING
-        self.display = ''
-        self.local_time = 0
-        self.local_index = 0
 
         self.users = []
 
@@ -64,7 +62,9 @@ class ProtoBowl:
     """Reads websocket and updates vars"""
     def on_websocket_recv(self):
         while True:
-            data = utils.extract_json(self.ws.recv())
+
+            raw_data = self.ws.recv()
+            data = utils.extract_json(raw_data)
 
             if type(data) is dict and data['name'] == 'sync':
 
@@ -83,52 +83,18 @@ class ProtoBowl:
                 else:
                     self.game_state = GameState.IDLE
 
-                # check buzzes (pauses yeah)
+                # check for time freezes
                 if self.data['time_freeze'] != 0:
                     self.game_state = GameState.BUZZED
 
                 # detect new question
                 if 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
-                    self.init_disp()
+                    self.game_state = GameState.NEW_Q
 
             self.ping()
 
-    def update_disp(self):
-        while True:
-            try:
-                if self.game_state == GameState.RUNNING:
-                    qList = self.data['question'].split(' ')
-                    current_interval = round(self.data['timing'][self.local_index]*self.data['rate'])
-                    time.sleep(current_interval / 1000)
-                    self.local_time += current_interval
-                    self.local_index += 1
 
-                    #print('======================================')
-                    #print(self.local_index)
-                    #print(' '.join(qList[:self.local_index]))
-                    #print('--------------------------------------\n')
-            except KeyError:
-                print('error')
-
-    # initialize display
-    # fix timing
-    def init_disp(self):
-        if self.game_state == GameState.RUNNING:
-            time_passed = (self.data['real_time'] - self.data['time_offset'] - self.data['begin_time'])
-            accum = 0
-            disp = ''
-            qList = self.data['question'].split(' ')
-
-            for i in range(len(self.data['timing'])):
-                self.local_index = i
-                disp += qList[i] + ' '
-                accum += round(self.data['timing'][i]*self.data['rate'])
-
-                if accum >= time_passed:
-                    break
-
-            self.local_time = self.data['real_time']
-
+    """ connects to server and joins room """
     def connect(self):
         r = requests.get('http://'+self.server)
         socketString = r.text.split(':')[0]
@@ -139,19 +105,18 @@ class ProtoBowl:
         logging.info('Cookie = ' + self.cookie)
 
         self.ws_recv_t = threading.Thread(target=self.on_websocket_recv)
-        self.update_t = threading.Thread(target=self.update_disp)
         self.ws_recv_t.start()
-        self.update_t.start()
 
-    def kill_threads(self):
-        self.ws_recv_t.join()
-        self.update_t.join()
 
+    """ Buzzes and answers """
     def answer(self, guess):
         self.buzz()
         self.guess(guess, True)
 
-    """ === Raw commands for interacting with PB === """
+
+    """ ======================== Raw commands for interacting with PB ======================== """
+
+
     def join_room(self):
         self.ws.send('5:::{"name":"join","args":[{"cookie":"' + self.cookie + '","auth":null,"question_type":"qb","room_name":"' + self.room_name + '","muwave":false,"agent":"M4/Web","agent_version":"Sat Sep 02 2017 11:33:43 GMT-0700 (PDT)","version":8}]}')
         logging.info('Joined ' + self.room_name)
