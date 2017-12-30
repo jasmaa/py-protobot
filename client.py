@@ -14,11 +14,11 @@ class Client:
             self.update_disp()
 
 
-    """ Runs client display update """
+    """ Runs client to display """
     def update_disp(self):
         while True:
 
-            print(self.pb.game_state)
+            #print(self.pb.game_state)
 
             if self.pb.game_state == GameState.NEW_Q:
                 self.pb.game_state = GameState.RUNNING
@@ -26,16 +26,25 @@ class Client:
 
             try:
                 if self.pb.game_state == GameState.RUNNING:
-                    qList = self.pb.data['question'].split(' ')
-                    current_interval = round(self.pb.data['timing'][self.local_index]*self.pb.data['rate'])
-                    time.sleep(current_interval / 1000)
-                    self.local_time += current_interval
-                    self.local_index += 1
+                    if self.local_index < len(self.pb.data['timing']):
+                        qList = self.pb.data['question'].split(' ')
+                        current_interval = round(self.pb.data['timing'][self.local_index]*self.pb.data['rate'])
+                        time.sleep(current_interval / 1000)
+                        self.local_time += current_interval
+                        self.local_index += 1
 
-                    print('======================================')
-                    print(self.local_index)
-                    print(' '.join(qList[:self.local_index]))
-                    print('--------------------------------------\n')
+                        """
+                        print('======================================')
+                        print(self.local_index)
+                        print(' '.join(qList[:self.local_index]))
+                        print('--------------------------------------\n')
+                        """
+
+                    else:
+                        print('question end')
+                        time.sleep(self.pb.data['answer_duration'] / 1000)
+                        self.pb.game_state = GameState.IDLE
+                        print('booyah')
             except KeyError:
                 print('error')
 
