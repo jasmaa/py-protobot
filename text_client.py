@@ -1,5 +1,12 @@
-import protobowl
+""" Text client example """
 
-pb = protobowl.ProtoBowl('bot-testing-two', 'cookie')
+from client.protobowl import ProtoBowl
+from client.display import QuestionDisplay
+import time
+
+pb = ProtoBowl('bot-testing-two', 'cookie')
 pb.connect()
 pb.set_name('pbot-client')
+
+print('init question display')
+q_disp = QuestionDisplay(pb)

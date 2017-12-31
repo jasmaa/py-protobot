@@ -1,6 +1,4 @@
-""" PB api """
-# buzz time is 8 sec?
-
+""" PB base """
 import json
 import requests
 import websocket
@@ -10,11 +8,42 @@ import logging
 from enum import Enum
 import time
 
-import utils
+import client.utils as utils
+
+""" Game state enum """
+class GameState(Enum):
+    RUNNING = 0
+    PAUSED = 1
+    BUZZED = 2
+    PROMPTED = 3
+    IDLE = 4
+    NEW_Q = 5
+
+""" Difficulty enum """
+class Difficulty(Enum):
+    ANY     = 'Any'
+    MS      = 'MS'
+    HS      = 'HS'
+    OPEN    = 'Open'
+    COLLEGE = 'College'
+
+""" Category enum """
+class Category(Enum):
+    EVERYTHING      = 'Everything'
+    TRASH           = 'Trash'
+    SOCIAL_SCIENCE  = 'Social Science'
+    SCIENCE         = 'Science'
+    RELIGION        = 'Religion'
+    PHILOSOPHY      = 'Philosophy'
+    MYTHOLOGY       = 'Mythology'
+    LITERATURE      = 'Literature'
+    HISTORY         = 'History'
+    GEOGRAPHY       = 'Geography'
+    FINE_ARTS       = 'Fine Arts'
+    CURRENT_EVENTS  = 'Current Events'
 
 """ Main connection to PB """
 class ProtoBowl:
-
     ws = websocket.WebSocket()
     server = 'ocean.protobowl.com:443/socket.io/1/websocket/'
 
@@ -23,66 +52,46 @@ class ProtoBowl:
         self.room_name = room
         self.cookie = cookie
         self.name = None
+        self.game_state = GameState.RUNNING
+        self.users = []
 
         # Received data
         self.data = {}
 
-
-        self.users = []
-
         logging.basicConfig(filename='myapp.log', level=logging.INFO, filemode='w')
-        #logging.getLogger().addHandler(logging.StreamHandler())
-
-    """Debug print"""
-    def key_print(self, val):
-        print('%-12s:  %-12s' % (val, str(self.data[val])))
-    def debug_print(self):
-        print('TIME STAT ======================')
-        print('================================')
-        self.key_print('real_time')
-        self.key_print('time_freeze')
-        self.key_print('time_offset')
-        self.key_print('begin_time')
-        self.key_print('end_time')
-        self.key_print('rate')
-        print('total time: ', utils.cumsum(self.data['timing'], self.data['rate']))
-        print('================================\n')
 
     """Reads websocket and updates vars"""
-    def update(self):
+    def on_websocket_recv(self):
         while True:
-            data = utils.extract_json(self.ws.recv())
+            raw_data = self.ws.recv()
+            data = utils.extract_json(raw_data)
 
             if type(data) is dict and data['name'] == 'sync':
-                args = data['args'][0]
 
-                #flag = False
-                #if 'question' in self.data.keys() and 'question' in args.keys() and self.data['question'] != args['question']:
-                #    flag = True
+                args = data['args'][0]
+                old_data = dict(self.data)
 
                 self.data = utils.union_dict(self.data, args)
 
-                #if flag:
-                #    self.display()
-                #    time.sleep(5)
-                #    self.debug_print()
+                # check running
+                # real_time - time_offset < end_time
+                if self.data['real_time'] - self.data['time_offset'] < self.data['end_time']:
+                    self.game_state = GameState.RUNNING
+                else:
+                    self.game_state = GameState.IDLE
+
+                # check for time freezes
+                if self.data['time_freeze'] != 0:
+                    self.game_state = GameState.BUZZED
+
+                # detect new question
+                elif 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
+                    self.game_state = GameState.NEW_Q
 
             self.ping()
 
-    def display(self):
-        qList = self.data['question'].split(' ')
-        start = time.time()
-        print('\n==============================================================\n')
-        for i in range(len(self.data['timing'])):
-            #print(qList[i],end=' ')
 
-            # fix timing (1300 if printing)
-            # wait time around 5 sec after
-            time.sleep(round(self.data['timing'][i] * self.data['rate'])  / 1000)
-
-        end = time.time()
-        print(end-start)
-
+    """ connects to server and joins room """
     def connect(self):
         r = requests.get('http://'+self.server)
         socketString = r.text.split(':')[0]
@@ -92,14 +101,18 @@ class ProtoBowl:
         self.join_room()
         logging.info('Cookie = ' + self.cookie)
 
-        t = threading.Thread(target=self.update)
-        t.start()
+        self.ws_recv_t = threading.Thread(target=self.on_websocket_recv)
+        self.ws_recv_t.start()
 
+
+    """ Buzzes and answers """
     def answer(self, guess):
         self.buzz()
         self.guess(guess, True)
 
-    """ === Raw commands for interacting with PB === """
+
+    """ ======================== Raw commands for interacting with PB ======================== """
+
     def join_room(self):
         self.ws.send('5:::{"name":"join","args":[{"cookie":"' + self.cookie + '","auth":null,"question_type":"qb","room_name":"' + self.room_name + '","muwave":false,"agent":"M4/Web","agent_version":"Sat Sep 02 2017 11:33:43 GMT-0700 (PDT)","version":8}]}')
         logging.info('Joined ' + self.room_name)
@@ -157,26 +170,3 @@ class User:
 
     def __str__(self):
         return 'User:' + self.id + ',' + self.name + ',' + str(self.score)
-
-""" Difficulty enum """
-class Difficulty(Enum):
-    ANY     = 'Any'
-    MS      = 'MS'
-    HS      = 'HS'
-    OPEN    = 'Open'
-    COLLEGE = 'College'
-
-""" Category enum """
-class Category(Enum):
-    EVERYTHING      = 'Everything'
-    TRASH           = 'Trash'
-    SOCIAL_SCIENCE  = 'Social Science'
-    SCIENCE         = 'Science'
-    RELIGION        = 'Religion'
-    PHILOSOPHY      = 'Philosophy'
-    MYTHOLOGY       = 'Mythology'
-    LITERATURE      = 'Literature'
-    HISTORY         = 'History'
-    GEOGRAPHY       = 'Geography'
-    FINE_ARTS       = 'Fine Arts'
-    CURRENT_EVENTS  = 'Current Events'

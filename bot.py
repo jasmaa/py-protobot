@@ -1,8 +1,8 @@
 """ Bot example """
 
-from protobowl import ProtoBowl
-from protobowl import Difficulty, Category
-import utils
+from client.protobowl import ProtoBowl
+from client.protobowl import Difficulty, Category
+import client.utils as utils
 import time
 
 PERMITTED_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ "
@@ -15,9 +15,8 @@ pb.connect()
 pb.set_name('PBot')
 
 while True:
-
-    # wait for bot to load all keys
-    time.sleep(0.5)
+    # wait to load all keys
+    time.sleep(0.1)
     
     pb.answer(utils.strip2alpha(pb.data['answer'], PERMITTED_CHARS))
     pb.skip()
