@@ -31,14 +31,11 @@ class ProtoBowl:
         self.room_name = room
         self.cookie = cookie
         self.name = None
+        self.game_state = GameState.RUNNING
+        self.users = []
 
         # Received data
         self.data = {}
-
-        # state vars
-        self.game_state = GameState.RUNNING
-
-        self.users = []
 
         logging.basicConfig(filename='myapp.log', level=logging.INFO, filemode='w')
         #logging.getLogger().addHandler(logging.StreamHandler())
@@ -88,7 +85,7 @@ class ProtoBowl:
                     self.game_state = GameState.BUZZED
 
                 # detect new question
-                if 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
+                elif 'question' in old_data.keys() and 'question' in args.keys() and old_data['question'] != args['question']:
                     self.game_state = GameState.NEW_Q
 
             self.ping()
@@ -115,7 +112,6 @@ class ProtoBowl:
 
 
     """ ======================== Raw commands for interacting with PB ======================== """
-
 
     def join_room(self):
         self.ws.send('5:::{"name":"join","args":[{"cookie":"' + self.cookie + '","auth":null,"question_type":"qb","room_name":"' + self.room_name + '","muwave":false,"agent":"M4/Web","agent_version":"Sat Sep 02 2017 11:33:43 GMT-0700 (PDT)","version":8}]}')
