@@ -8,7 +8,7 @@ import logging
 from enum import Enum
 import time
 
-import utils
+import client.utils as utils
 
 """ Game state enum """
 class GameState(Enum):

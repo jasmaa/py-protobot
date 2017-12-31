@@ -1,6 +1,6 @@
 """ Client-side code """
 
-from protobowl import GameState
+from client.protobowl import GameState
 import time
 import threading
 

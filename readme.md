@@ -1,6 +1,6 @@
 # Python ProtoBot
 
-An attempt at writing a bot and possibly API for Protobowl in Python 3
+An attempt at writing a bot and API for [Protobowl](http://protobowl.com/) in Python 3
 
 ### Usage
 
