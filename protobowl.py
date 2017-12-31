@@ -1,6 +1,4 @@
-""" PB api """
-# buzz time is 8 sec?
-
+""" PB base """
 import json
 import requests
 import websocket
@@ -12,6 +10,7 @@ import time
 
 import utils
 
+""" Game state enum """
 class GameState(Enum):
     RUNNING = 0
     PAUSED = 1
@@ -20,9 +19,31 @@ class GameState(Enum):
     IDLE = 4
     NEW_Q = 5
 
+""" Difficulty enum """
+class Difficulty(Enum):
+    ANY     = 'Any'
+    MS      = 'MS'
+    HS      = 'HS'
+    OPEN    = 'Open'
+    COLLEGE = 'College'
+
+""" Category enum """
+class Category(Enum):
+    EVERYTHING      = 'Everything'
+    TRASH           = 'Trash'
+    SOCIAL_SCIENCE  = 'Social Science'
+    SCIENCE         = 'Science'
+    RELIGION        = 'Religion'
+    PHILOSOPHY      = 'Philosophy'
+    MYTHOLOGY       = 'Mythology'
+    LITERATURE      = 'Literature'
+    HISTORY         = 'History'
+    GEOGRAPHY       = 'Geography'
+    FINE_ARTS       = 'Fine Arts'
+    CURRENT_EVENTS  = 'Current Events'
+
 """ Main connection to PB """
 class ProtoBowl:
-
     ws = websocket.WebSocket()
     server = 'ocean.protobowl.com:443/socket.io/1/websocket/'
 
@@ -38,28 +59,10 @@ class ProtoBowl:
         self.data = {}
 
         logging.basicConfig(filename='myapp.log', level=logging.INFO, filemode='w')
-        #logging.getLogger().addHandler(logging.StreamHandler())
-
-    """Debug print"""
-    def key_print(self, val):
-        print('%-12s:  %-12s' % (val, str(self.data[val])))
-    def debug_print(self):
-        print('TIME STAT ======================')
-        print('================================')
-        self.key_print('real_time')
-        self.key_print('begin_time')
-        self.key_print('end_time')
-        self.key_print('time_freeze')
-        self.key_print('time_offset')
-        self.key_print('time_spent')
-        self.key_print('rate')
-        print('total time: ', utils.cumsum(self.data['timing'], self.data['rate']))
-        print('================================\n')
 
     """Reads websocket and updates vars"""
     def on_websocket_recv(self):
         while True:
-
             raw_data = self.ws.recv()
             data = utils.extract_json(raw_data)
 
@@ -69,9 +72,6 @@ class ProtoBowl:
                 old_data = dict(self.data)
 
                 self.data = utils.union_dict(self.data, args)
-
-                # debug timing
-                #self.debug_print()
 
                 # check running
                 # real_time - time_offset < end_time
@@ -170,26 +170,3 @@ class User:
 
     def __str__(self):
         return 'User:' + self.id + ',' + self.name + ',' + str(self.score)
-
-""" Difficulty enum """
-class Difficulty(Enum):
-    ANY     = 'Any'
-    MS      = 'MS'
-    HS      = 'HS'
-    OPEN    = 'Open'
-    COLLEGE = 'College'
-
-""" Category enum """
-class Category(Enum):
-    EVERYTHING      = 'Everything'
-    TRASH           = 'Trash'
-    SOCIAL_SCIENCE  = 'Social Science'
-    SCIENCE         = 'Science'
-    RELIGION        = 'Religion'
-    PHILOSOPHY      = 'Philosophy'
-    MYTHOLOGY       = 'Mythology'
-    LITERATURE      = 'Literature'
-    HISTORY         = 'History'
-    GEOGRAPHY       = 'Geography'
-    FINE_ARTS       = 'Fine Arts'
-    CURRENT_EVENTS  = 'Current Events'
