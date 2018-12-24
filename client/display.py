@@ -8,7 +8,7 @@ import threading
 class QuestionDisplay:
     def __init__(self, pb):
         # Wait for main pb client to start up
-        time.sleep(0.1)
+        time.sleep(0.5)
 
         self.pb = pb
         self.local_time = 0
@@ -33,11 +33,10 @@ class QuestionDisplay:
 
         # Calculates current index and display
         accum = 0
-        disp = ''
         qList = self.pb.data['question'].split(' ')
         for i in range(len(self.pb.data['timing'])):
             self.local_index = i
-            disp += qList[i] + ' '
+            self.disp += qList[i] + ' '
             accum += round(self.pb.data['timing'][i]*self.pb.data['rate'])
 
             if accum >= time_passed:
